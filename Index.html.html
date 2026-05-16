@@ -1,0 +1,643 @@
+<!--
+  ============================================================
+  Weather Challenge Quiz  -  Unit 8: Weather
+  إعداد الطالب: يزن حمدي
+  إشراف المعلم القدير: اسماعيل
+  ============================================================
+  Single-file interactive Kahoot-style quiz for elementary
+  students. Pure HTML + CSS + JavaScript. Ready for GitHub Pages.
+-->
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weather Challenge Quiz — Unit 8</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ============== THEME TOKENS ============== */
+:root{
+  --kahoot-red:#e21b3c;
+  --kahoot-blue:#1368ce;
+  --kahoot-yellow:#d89e00;
+  --kahoot-green:#26890c;
+  --bg1:#46178f;
+  --bg2:#864cbf;
+  --card:#ffffff;
+  --text:#222;
+  --muted:#666;
+  --accent:#ffd54a;
+  --shadow:0 10px 25px rgba(0,0,0,.25);
+}
+body.dark{
+  --bg1:#0d1b2a;
+  --bg2:#1b263b;
+  --card:#1e293b;
+  --text:#f1f5f9;
+  --muted:#cbd5e1;
+  --shadow:0 10px 25px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;}
+body{
+  font-family:'Fredoka','Cairo',sans-serif;
+  color:var(--text);
+  background:linear-gradient(135deg,var(--bg1),var(--bg2));
+  background-size:400% 400%;
+  animation:bgShift 18s ease infinite;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+@keyframes bgShift{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+
+/* ============== HEADER CREDIT BAR ============== */
+.credit-bar{
+  text-align:center;
+  font-family:'Cairo',sans-serif;
+  font-weight:700;
+  color:#fff;
+  background:rgba(0,0,0,.25);
+  padding:8px 12px;
+  font-size:14px;
+  letter-spacing:.3px;
+}
+.credit-bar span{color:var(--accent)}
+
+/* ============== TOP BAR ============== */
+.topbar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 18px;color:#fff;flex-wrap:wrap;gap:10px;
+}
+.topbar .left,.topbar .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn-icon{
+  background:rgba(255,255,255,.15);
+  border:none;color:#fff;
+  padding:8px 12px;border-radius:10px;
+  cursor:pointer;font-weight:700;font-size:14px;
+  transition:transform .15s, background .2s;
+}
+.btn-icon:hover{background:rgba(255,255,255,.3);transform:translateY(-2px)}
+.score-pill{
+  background:var(--accent);color:#222;
+  padding:8px 14px;border-radius:999px;font-weight:900;
+  box-shadow:var(--shadow);
+}
+
+/* ============== SCREENS ============== */
+.screen{display:none;padding:20px;animation:fadeIn .5s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ============== WELCOME ============== */
+.welcome{
+  text-align:center;color:#fff;padding:40px 20px;
+}
+.welcome h1{
+  font-size:clamp(36px,7vw,72px);
+  font-weight:900;
+  text-shadow:3px 3px 0 rgba(0,0,0,.25);
+  letter-spacing:1px;
+}
+.welcome h2{
+  font-size:clamp(18px,3vw,26px);
+  margin-top:10px;font-weight:500;opacity:.95;
+}
+.weather-row{
+  display:flex;justify-content:center;gap:30px;
+  margin:40px 0;flex-wrap:wrap;font-size:64px;
+}
+.weather-row span{display:inline-block;animation:bounce 2.5s ease-in-out infinite}
+.weather-row span:nth-child(2){animation-delay:.4s}
+.weather-row span:nth-child(3){animation-delay:.8s}
+.weather-row span:nth-child(4){animation-delay:1.2s}
+@keyframes bounce{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-20px) rotate(8deg)}}
+
+.start-btn{
+  background:var(--accent);color:#222;
+  border:none;padding:18px 50px;border-radius:999px;
+  font-size:22px;font-weight:900;cursor:pointer;
+  box-shadow:var(--shadow);
+  transition:transform .2s;
+  font-family:inherit;
+}
+.start-btn:hover{transform:scale(1.08)}
+
+/* ============== QUIZ ============== */
+.quiz-card{
+  max-width:900px;margin:20px auto;
+  background:var(--card);border-radius:24px;
+  padding:28px;box-shadow:var(--shadow);
+}
+.progress-info{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:12px;font-weight:700;color:var(--muted);
+}
+.progress-bar{
+  height:12px;background:#eee;border-radius:999px;overflow:hidden;
+  margin-bottom:18px;
+}
+body.dark .progress-bar{background:#334155}
+.progress-fill{
+  height:100%;background:linear-gradient(90deg,var(--kahoot-green),var(--kahoot-blue));
+  width:0%;transition:width .4s ease;
+}
+
+.question-row{
+  display:flex;align-items:center;gap:16px;margin-bottom:20px;
+}
+.timer-ring{
+  position:relative;width:70px;height:70px;flex-shrink:0;
+}
+.timer-ring svg{transform:rotate(-90deg)}
+.timer-ring circle{
+  fill:none;stroke-width:8;
+}
+.timer-ring .bg{stroke:#eee}
+body.dark .timer-ring .bg{stroke:#334155}
+.timer-ring .fg{
+  stroke:var(--kahoot-green);
+  stroke-linecap:round;
+  transition:stroke-dashoffset 1s linear,stroke .3s;
+}
+.timer-num{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:20px;
+}
+.question-text{
+  font-size:clamp(20px,3vw,28px);font-weight:700;flex:1;
+}
+
+.answers{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+}
+@media(max-width:560px){.answers{grid-template-columns:1fr}}
+.answer{
+  border:none;border-radius:16px;
+  padding:22px 18px;color:#fff;font-size:18px;font-weight:700;
+  cursor:pointer;text-align:left;
+  font-family:inherit;
+  box-shadow:var(--shadow);
+  transition:transform .15s, filter .2s;
+  display:flex;align-items:center;gap:12px;
+}
+.answer:hover:not(:disabled){transform:translateY(-3px) scale(1.02)}
+.answer:disabled{cursor:not-allowed;opacity:.85}
+.answer .shape{
+  width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.25);border-radius:6px;font-weight:900;
+}
+.answer.a0{background:var(--kahoot-red)}
+.answer.a1{background:var(--kahoot-blue)}
+.answer.a2{background:var(--kahoot-yellow)}
+.answer.a3{background:var(--kahoot-green)}
+.answer.correct{outline:5px solid #fff;filter:brightness(1.1)}
+.answer.wrong{filter:grayscale(.6) brightness(.7)}
+
+.feedback{
+  margin-top:18px;text-align:center;font-size:20px;font-weight:900;
+  min-height:30px;
+}
+.feedback.good{color:var(--kahoot-green)}
+.feedback.bad{color:var(--kahoot-red)}
+
+/* ============== END SCREEN ============== */
+.end-card{
+  max-width:700px;margin:30px auto;background:var(--card);
+  border-radius:24px;padding:30px;box-shadow:var(--shadow);text-align:center;
+}
+.end-card h2{font-size:36px;color:var(--kahoot-blue);margin-bottom:8px}
+.final-score{
+  font-size:60px;font-weight:900;color:var(--kahoot-green);margin:14px 0;
+}
+.name-input{
+  padding:12px 16px;border-radius:12px;border:2px solid #ddd;
+  font-size:16px;font-family:inherit;width:80%;max-width:300px;
+  margin:10px 0;
+}
+.leaderboard{
+  margin-top:24px;text-align:left;
+}
+.leaderboard h3{
+  text-align:center;margin-bottom:12px;color:var(--kahoot-blue);
+}
+.lb-item{
+  display:flex;justify-content:space-between;
+  padding:10px 14px;margin:6px 0;border-radius:10px;
+  background:rgba(0,0,0,.05);font-weight:700;
+}
+body.dark .lb-item{background:rgba(255,255,255,.08)}
+.lb-item .rank{color:var(--kahoot-red)}
+
+/* ============== CONFETTI ============== */
+canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
+
+/* ============== CLOUDS ANIMATED BG ============== */
+.cloud{
+  position:fixed;top:10%;left:-200px;font-size:80px;opacity:.25;
+  animation:drift 40s linear infinite;pointer-events:none;z-index:0;
+}
+.cloud.c2{top:60%;font-size:60px;animation-duration:55s;animation-delay:-20s}
+.cloud.c3{top:30%;font-size:100px;animation-duration:70s;animation-delay:-40s;opacity:.15}
+@keyframes drift{from{transform:translateX(0)}to{transform:translateX(120vw)}}
+
+main{position:relative;z-index:1}
+</style>
+</head>
+<body>
+
+<!-- Animated background clouds -->
+<div class="cloud">☁️</div>
+<div class="cloud c2">☁️</div>
+<div class="cloud c3">☁️</div>
+
+<!-- Credit bar (Arabic) -->
+<div class="credit-bar" dir="rtl">
+  إعداد الطالب: <span>يزن حمدي</span> &nbsp;|&nbsp; إشراف المعلم القدير: <span>اسماعيل</span>
+</div>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="left">
+    <button class="btn-icon" id="themeBtn" title="Toggle dark/light">🌓 Theme</button>
+    <button class="btn-icon" id="fsBtn" title="Fullscreen">⛶ Fullscreen</button>
+  </div>
+  <div class="right">
+    <div class="score-pill">⭐ Score: <span id="scoreVal">0</span></div>
+  </div>
+</div>
+
+<main>
+
+<!-- ========== WELCOME SCREEN ========== -->
+<section class="screen active" id="welcomeScreen">
+  <div class="welcome">
+    <h1>Weather Challenge Quiz</h1>
+    <h2>Unit 8 – Let's Learn About Weather! ☀️🌧️🌈</h2>
+    <div class="weather-row">
+      <span>☀️</span><span>☁️</span><span>🌧️</span><span>🌈</span>
+    </div>
+    <button class="start-btn" id="startBtn">▶ Start Quiz</button>
+  </div>
+</section>
+
+<!-- ========== QUIZ SCREEN ========== -->
+<section class="screen" id="quizScreen">
+  <div class="quiz-card">
+    <div class="progress-info">
+      <span id="qCounter">Question 1 of 15</span>
+      <span id="bonusInfo">⏱ Faster = More points</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+    <div class="question-row">
+      <div class="timer-ring">
+        <svg width="70" height="70">
+          <circle class="bg" cx="35" cy="35" r="30"></circle>
+          <circle class="fg" cx="35" cy="35" r="30"
+                  stroke-dasharray="188.4" stroke-dashoffset="0"></circle>
+        </svg>
+        <div class="timer-num" id="timerNum">20</div>
+      </div>
+      <div class="question-text" id="questionText">Question</div>
+    </div>
+
+    <div class="answers" id="answersBox"></div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+</section>
+
+<!-- ========== END SCREEN ========== -->
+<section class="screen" id="endScreen">
+  <div class="end-card">
+    <h2>🎉 Quiz Complete!</h2>
+    <p>Great job exploring the weather!</p>
+    <div class="final-score" id="finalScore">0</div>
+    <div id="saveBox">
+      <input type="text" id="nameInput" class="name-input" placeholder="Enter your name" maxlength="20"/>
+      <br>
+      <button class="start-btn" id="saveBtn">💾 Save Score</button>
+    </div>
+    <div class="leaderboard">
+      <h3>🏆 Top 5 Players</h3>
+      <div id="lbList"></div>
+    </div>
+    <br>
+    <button class="start-btn" id="replayBtn">🔄 Play Again</button>
+  </div>
+</section>
+
+</main>
+
+<canvas id="confetti"></canvas>
+
+<script>
+/* ===========================================================
+   QUESTION BANK  (30+ questions from Unit 8: Weather)
+   =========================================================== */
+const QUESTIONS = [
+  {q:"What's the weather like when water falls from clouds?",a:["Rainy","Sunny","Snowy","Windy"],c:0},
+  {q:"Complete: It's going to be _____ tomorrow. ☀️",a:["cloudy","sunny","snowy","foggy"],c:1},
+  {q:"What do we see when sun and rain happen together?",a:["Tornado","Lightning","Rainbow","Hail"],c:2},
+  {q:"Which season is very hot?",a:["Winter","Autumn","Spring","Summer"],c:3},
+  {q:"What was the weather like yesterday? 'It was _____.' ☁️",a:["sunny","cloudy","snowy","windy"],c:1},
+  {q:"What's the weather symbol ❄️ mean?",a:["Snowy","Rainy","Sunny","Windy"],c:0},
+  {q:"It's very cold and white falls from the sky. It is...",a:["Raining","Snowing","Shining","Blowing"],c:1},
+  {q:"What season comes after winter?",a:["Summer","Autumn","Spring","Winter"],c:2},
+  {q:"How do we ask about the weather?",a:["What time is it?","How are you?","What's the weather like?","Where is it?"],c:2},
+  {q:"Choose the correct future form: 'It ___ rain tomorrow.'",a:["is going to","go to","are going to","going"],c:0},
+  {q:"When trees lose leaves, what season is it?",a:["Spring","Summer","Autumn","Winter"],c:2},
+  {q:"☀️ means the weather is...",a:["Snowy","Sunny","Cloudy","Rainy"],c:1},
+  {q:"What do you wear when it's cold?",a:["Shorts","T-shirt","Coat","Sandals"],c:2},
+  {q:"What do you wear when it's hot?",a:["Coat","Scarf","Boots","T-shirt"],c:3},
+  {q:"'It was sunny yesterday.' This sentence is in the...",a:["Past","Present","Future","Question"],c:0},
+  {q:"What's the opposite of HOT?",a:["Warm","Cool","Cold","Wet"],c:2},
+  {q:"💨 What weather does this symbol show?",a:["Windy","Rainy","Sunny","Snowy"],c:0},
+  {q:"What can fly a kite? It's a _____ day.",a:["sunny","rainy","windy","snowy"],c:2},
+  {q:"Rainbow has how many colors?",a:["5","6","7","8"],c:2},
+  {q:"What season is very cold with snow?",a:["Summer","Spring","Autumn","Winter"],c:3},
+  {q:"'Tomorrow it is going to _____.' Choose a weather verb.",a:["rain","rains","rained","raining"],c:0},
+  {q:"⛈️ This symbol shows...",a:["Sunny","Cloudy","Stormy","Foggy"],c:2},
+  {q:"What's the weather like? It's 35°C. It's very...",a:["cold","hot","cool","snowy"],c:1},
+  {q:"What's the weather like? It's 2°C. It's very...",a:["hot","warm","cold","sunny"],c:2},
+  {q:"Which one is NOT a season?",a:["Spring","Rainy","Summer","Winter"],c:1},
+  {q:"'It was _____ last week.' (🌧️)",a:["sunny","rainy","hot","windy"],c:1},
+  {q:"Pick the correct sentence:",a:["It going rain.","It is going to rain.","It rains going.","It to rain going."],c:1},
+  {q:"What appears in the sky after rain with sunshine?",a:["Star","Moon","Rainbow","Cloud"],c:2},
+  {q:"☁️ means the sky is full of...",a:["Stars","Clouds","Birds","Snow"],c:1},
+  {q:"In summer the weather is usually...",a:["snowy","hot and sunny","very cold","foggy"],c:1},
+  {q:"In winter the weather is usually...",a:["hot","cold","warm","dry only"],c:1},
+  {q:"Temperature is measured in...",a:["meters","liters","degrees","kilograms"],c:2},
+  {q:"What's the weather like in the desert?",a:["Snowy","Hot and dry","Cold and wet","Foggy"],c:1},
+  {q:"Past of 'It is rainy' is...",a:["It was rainy","It were rainy","It is rainy","It being rainy"],c:0}
+];
+
+/* ===========================================================
+   SOUND EFFECTS  (Web Audio API — no external files)
+   =========================================================== */
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function ensureAudio(){ if(!audioCtx) audioCtx = new AudioCtx(); }
+function beep(freq=440,dur=0.15,type='sine',vol=0.2){
+  try{
+    ensureAudio();
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type=type; o.frequency.value=freq;
+    g.gain.value=vol;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start();
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+dur);
+    o.stop(audioCtx.currentTime+dur);
+  }catch(e){}
+}
+const SFX = {
+  correct(){ beep(660,.12,'triangle',.25); setTimeout(()=>beep(880,.18,'triangle',.25),120); },
+  wrong(){ beep(180,.3,'sawtooth',.2); },
+  tick(){ beep(900,.05,'square',.08); },
+  win(){
+    [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.2,'triangle',.25),i*150));
+  }
+};
+
+/* ===========================================================
+   GAME STATE
+   =========================================================== */
+const TIME_PER_Q = 20;
+const TOTAL_QS = 30;
+let order = [];
+let current = 0;
+let score = 0;
+let timeLeft = TIME_PER_Q;
+let timerInt = null;
+let answered = false;
+
+const $ = id => document.getElementById(id);
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+/* ===========================================================
+   QUIZ FLOW
+   =========================================================== */
+function startQuiz(){
+  ensureAudio();
+  score = 0; current = 0;
+  $('scoreVal').textContent = 0;
+  // pick 15 random questions
+  order = shuffle(QUESTIONS).slice(0,TOTAL_QS).map(q=>{
+    // shuffle answers
+    const indexed = q.a.map((text,i)=>({text,correct:i===q.c}));
+    const sh = shuffle(indexed);
+    return {
+      q:q.q,
+      answers:sh.map(x=>x.text),
+      correctIdx:sh.findIndex(x=>x.correct)
+    };
+  });
+  showScreen('quizScreen');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  answered = false;
+  const item = order[current];
+  $('qCounter').textContent = `Question ${current+1} of ${TOTAL_QS}`;
+  $('progressFill').style.width = ((current)/TOTAL_QS*100)+'%';
+  $('questionText').textContent = item.q;
+  $('feedback').textContent = '';
+  $('feedback').className = 'feedback';
+
+  const box = $('answersBox');
+  box.innerHTML='';
+  const shapes=['▲','◆','●','■'];
+  item.answers.forEach((txt,i)=>{
+    const b=document.createElement('button');
+    b.className=`answer a${i}`;
+    b.innerHTML=`<span class="shape">${shapes[i]}</span><span>${txt}</span>`;
+    b.onclick=()=>selectAnswer(i,b);
+    box.appendChild(b);
+  });
+
+  // reset timer
+  timeLeft = TIME_PER_Q;
+  updateTimerRing();
+  $('timerNum').textContent = timeLeft;
+  if(timerInt) clearInterval(timerInt);
+  timerInt = setInterval(tick,1000);
+}
+
+function updateTimerRing(){
+  const C = 2*Math.PI*30; // ~188.4
+  const offset = C * (1 - timeLeft/TIME_PER_Q);
+  const fg = document.querySelector('.timer-ring .fg');
+  fg.style.strokeDashoffset = offset;
+  if(timeLeft<=5) fg.style.stroke = 'var(--kahoot-red)';
+  else if(timeLeft<=10) fg.style.stroke = 'var(--kahoot-yellow)';
+  else fg.style.stroke = 'var(--kahoot-green)';
+}
+
+function tick(){
+  timeLeft--;
+  $('timerNum').textContent = timeLeft;
+  updateTimerRing();
+  if(timeLeft<=5 && timeLeft>0) SFX.tick();
+  if(timeLeft<=0){
+    clearInterval(timerInt);
+    if(!answered) timeUp();
+  }
+}
+
+function selectAnswer(i,btn){
+  if(answered) return;
+  answered = true;
+  clearInterval(timerInt);
+  const item = order[current];
+  const buttons = document.querySelectorAll('.answer');
+  buttons.forEach((b,idx)=>{
+    b.disabled = true;
+    if(idx===item.correctIdx) b.classList.add('correct');
+    else if(idx===i) b.classList.add('wrong');
+  });
+
+  if(i===item.correctIdx){
+    const bonus = Math.round(timeLeft/TIME_PER_Q * 100);
+    const gained = 100 + bonus;
+    score += gained;
+    $('scoreVal').textContent = score;
+    $('feedback').textContent = `✅ Correct! +${gained} points (bonus ${bonus})`;
+    $('feedback').className = 'feedback good';
+    SFX.correct();
+  } else {
+    $('feedback').textContent = `❌ Oops! Correct answer: ${item.answers[item.correctIdx]}`;
+    $('feedback').className = 'feedback bad';
+    SFX.wrong();
+  }
+  setTimeout(nextQuestion, 1800);
+}
+
+function timeUp(){
+  answered = true;
+  const item = order[current];
+  document.querySelectorAll('.answer').forEach((b,idx)=>{
+    b.disabled = true;
+    if(idx===item.correctIdx) b.classList.add('correct');
+  });
+  $('feedback').textContent = `⏰ Time's up! Answer: ${item.answers[item.correctIdx]}`;
+  $('feedback').className = 'feedback bad';
+  SFX.wrong();
+  setTimeout(nextQuestion, 1800);
+}
+
+function nextQuestion(){
+  current++;
+  if(current>=TOTAL_QS) endQuiz();
+  else renderQuestion();
+}
+
+/* ===========================================================
+   END SCREEN + LEADERBOARD
+   =========================================================== */
+function endQuiz(){
+  showScreen('endScreen');
+  $('finalScore').textContent = score;
+  $('saveBox').style.display='block';
+  $('nameInput').value='';
+  renderLeaderboard();
+  SFX.win();
+  confettiBurst();
+}
+
+function getLB(){
+  try{ return JSON.parse(localStorage.getItem('weatherQuizLB')||'[]'); }catch(e){return [];}
+}
+function saveLB(list){
+  localStorage.setItem('weatherQuizLB', JSON.stringify(list));
+}
+function renderLeaderboard(){
+  const lb = getLB().sort((a,b)=>b.score-a.score).slice(0,5);
+  const box = $('lbList');
+  if(lb.length===0){ box.innerHTML='<p style="text-align:center;color:var(--muted)">No scores yet — be the first!</p>'; return; }
+  box.innerHTML = lb.map((it,i)=>
+    `<div class="lb-item"><span class="rank">#${i+1} ${it.name}</span><span>${it.score} pts</span></div>`
+  ).join('');
+}
+
+/* ===========================================================
+   CONFETTI
+   =========================================================== */
+function confettiBurst(){
+  const canvas = $('confetti');
+  const ctx = canvas.getContext('2d');
+  canvas.width = innerWidth; canvas.height = innerHeight;
+  const colors=['#e21b3c','#1368ce','#d89e00','#26890c','#ffd54a','#46178f'];
+  const pieces = Array.from({length:160},()=>({
+    x:Math.random()*canvas.width,
+    y:-20-Math.random()*200,
+    s:6+Math.random()*8,
+    vx:-2+Math.random()*4,
+    vy:2+Math.random()*4,
+    c:colors[Math.floor(Math.random()*colors.length)],
+    r:Math.random()*Math.PI
+  }));
+  let frames=0;
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.r+=0.1;
+      ctx.save();
+      ctx.translate(p.x,p.y); ctx.rotate(p.r);
+      ctx.fillStyle=p.c;
+      ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s);
+      ctx.restore();
+    });
+    frames++;
+    if(frames<200) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  draw();
+}
+
+/* ===========================================================
+   UI BINDINGS
+   =========================================================== */
+$('startBtn').onclick = startQuiz;
+$('replayBtn').onclick = startQuiz;
+
+$('saveBtn').onclick = ()=>{
+  const name = ($('nameInput').value||'Player').trim().slice(0,20);
+  const lb = getLB();
+  lb.push({name,score,date:Date.now()});
+  saveLB(lb);
+  $('saveBox').style.display='none';
+  renderLeaderboard();
+};
+
+$('themeBtn').onclick = ()=> document.body.classList.toggle('dark');
+
+$('fsBtn').onclick = ()=>{
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+};
+
+// Resize confetti canvas on window resize
+addEventListener('resize',()=>{
+  const c=$('confetti'); c.width=innerWidth; c.height=innerHeight;
+});
+</script>
+</body>
+</html>
